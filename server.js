@@ -1,10 +1,9 @@
 console.log('May Node be with you');
 
-const express = require('express');
-const bodyParser= require('body-parser');
-const app = express();
-const MongoClient = require('mongodb').MongoClient;
-
+const express = require('express')
+const app = express()
+const bodyParser = require('body-parser')
+const MongoClient = require('mongodb').MongoClient
 
 var db
 
@@ -16,43 +15,45 @@ MongoClient.connect('mongodb://qouteDB:a1s2d3f4g5@ds011903.mlab.com:11903/startq
   })
 })
 
-// The urlencoded method within body-parser tells
-// body-parser to extract data from the <form> element 
-//and add them to the body property in the request object.
+app.set('view engine', 'ejs')
 app.use(bodyParser.urlencoded({extended: true}))
-
-
-// app.listen(3000, function() {
-//   console.log('listening on 3000')
-// })
-
+app.use(bodyParser.json())
+app.use(express.static('public'))
 
 app.get('/', function(req, res) {
-  res.sendFile(__dirname + '/index.html')
-  // Note: __dirname is the path to your current working directory. Try logging it and see what you get!
-  // Mine was '/Users/zellwk/Projects/demo-repos/crud-express-mongo' for this app.
-})
-
-
-// app.post('/quotes', function(req, res) {
- 
-//   console.log(req.body)
-// })
-app.post('/quotes', function(req, res) {
-  db.collection('quotes').save(req.body, function(err, result) {
-    if (err) return console.log(err);
-
-    console.log('saved to database');
-    res.redirect('/');
+  db.collection('quotes').find().toArray(function(err, result) {
+    if (err) return console.log(err)
+    res.render('index.ejs', {quotes: result})
   })
 })
-// ES5 - without arrow just function and block open
-// app.get('/', function(req, res) {
-//   res.send('Hello World')
-// })
 
-// ES6 - First off, I’m replacing the function() with the ES6 arrow function
-// app.get('/', (req, res) => {
-//   res.send('Hello World')
-// })
-// Note: request and response are usually written as req and res respectively.
+app.post('/quotes', function(req, res) {
+  db.collection('quotes').save(req.body, function(err, result) {
+    if (err) return console.log(err)
+    console.log('saved to database')
+    res.redirect('/')
+  })
+})
+
+app.put('/quotes', function(req, res) {
+  db.collection('quotes')
+  .findOneAndUpdate({name: 'Yoda'}, {
+    $set: {
+      name: req.body.name,
+      quote: req.body.quote
+    }
+  }, {
+    sort: {_id: -1},
+    upsert: true
+  }, function(err, result) {
+    if (err) return res.send(err)
+    res.send(result)
+  })
+})
+
+app.delete('/quotes', function(req, res) {
+  db.collection('quotes').findOneAndDelete({name: req.body.name}, function(err, result) {
+    if (err) return res.send(500, err)
+    res.send('A darth vadar quote got deleted')
+  })
+})
